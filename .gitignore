@@ -14,10 +14,6 @@ cabal-dev
 .cabal-sandbox/
 cabal.sandbox.config
 *.prof
-nix/
-*.nix
-*.project
-*.yaml
 *.aux
 *.hp
 *.eventlog
