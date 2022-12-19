@@ -17,14 +17,14 @@ cabal.sandbox.config
 *.aux
 *.hp
 *.eventlog
+*.nix
+*.yaml
 .stack-work/
 cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
 result*
-.nix
-.envrc
 .vim
 scripts/wallet
 status.json

@@ -1,6 +1,6 @@
-cabal-version:      3.0
-name:               plutus-starter
-version:            0.1.0.0
+cabal-version: 3.0
+name:          plutus-starter
+version:       0.1.0.0
 
 -- A short (one-line) description of the package.
 -- synopsis:
@@ -11,10 +11,10 @@ version:            0.1.0.0
 -- A URL where users can report bugs.
 -- bug-reports:
 
-license: Apache-2.0
+license:       Apache-2.0
 license-files: LICENSE
-author:             PardusEidolon
-maintainer:         jack@yumi.ai
+author:        PardusEidolon
+maintainer:    jack@yumi.ai
 
 -- A copyright notice.
 -- copyright:
@@ -22,49 +22,64 @@ maintainer:         jack@yumi.ai
 -- extra-source-files: CHANGELOG.md
 
 flag defer-plugin-errors
-    description:
-        Defer errors from the plugin, useful for things like Haddock that can't handle it.
-    default: False
-    manual: True
+  description:
+    Defer errors from the plugin, useful for things like Haddock that can't handle it.
+
+  default:     False
+  manual:      True
 
 common lang
-    default-language:   Haskell2010
-    ghc-options:
-      -Wall -Wnoncanonical-monad-instances
-      -Wincomplete-uni-patterns -Wincomplete-record-updates
-      -Wredundant-constraints -Widentities -rtsopts
-      -- See Plutus Tx readme
-      -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas
-    if flag(defer-plugin-errors)
-        ghc-options: -fplugin-opt PlutusTx.Plugin:defer-errors
+  default-language: Haskell2010
+  ghc-options:
+    -Wall -Wnoncanonical-monad-instances -Wincomplete-uni-patterns
+    -Wincomplete-record-updates -Wredundant-constraints -Widentities
+    -rtsopts -fobject-code -fno-ignore-interface-pragmas
+    -fno-omit-interface-pragmas
+
+  -- See Plutus Tx readme
+  if flag(defer-plugin-errors)
+    ghc-options: -fplugin-opt PlutusTx.Plugin:defer-errors
 
 library
-    import: lang
-    exposed-modules:
-      TokenMint1.SendToScriptMint,
-      TokenMint1.Trace,
-      TokenMint2.Mint,
-      TokenMint2.Trace,
-      Utils
-    build-depends:
-      base >= 4.9 && < 5,
-      aeson -any,
-      cardano-api -any,
-      data-default -any,
-      bytestring -any,
-      containers -any,
-      freer-extras -any,
-      freer-simple -any,
-      playground-common -any,
-      plutus-contract -any,
-      plutus-ledger -any,
-      plutus-ledger-api -any,
-      plutus-ledger-constraints -any,
-      plutus-tx -any,
-      plutus-tx-plugin -any,
-      plutus-script-utils -any,
-      plutus-use-cases -any,
-      text -any,
-      serialise -any,
-      lens -any,
-    hs-source-dirs: ./src
+  import:          lang
+  exposed-modules:
+    PlutusOptions
+    TokenMint2.Mint
+    TokenMint2.Trace
+    Utils
+
+  -- TokenMint1.SendToScriptMint, -- deprecated
+  -- TokenMint1.Trace,            -- deprecated
+  build-depends:
+    , aeson
+    , base                       >=4.9 && <5
+    , bytestring
+    , cardano-api
+    , containers
+    , data-default
+    , freer-extras
+    , freer-simple
+    , lens
+    , optparse-applicative
+    , playground-common
+    , plutus-contract
+    , plutus-ledger
+    , plutus-ledger-api
+    , plutus-ledger-constraints
+    , plutus-script-utils
+    , plutus-tx
+    , plutus-tx-plugin
+    , plutus-use-cases
+    , serialise
+    , text
+
+  hs-source-dirs:  ./src
+
+executable mint-cli
+  main-is:        Main.hs
+  hs-source-dirs: app
+  ghc-options:    -Wall
+  build-depends:
+    , base                  ^>=4.14.1.0
+    , optparse-applicative
+    , plutus-starter

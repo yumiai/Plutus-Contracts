@@ -1,49 +1,50 @@
-{-# LANGUAGE DeriveAnyClass         #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE NumericUnderscores     #-}
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE NoImplicitPrelude      #-}
-{-# LANGUAGE OverloadedStrings      #-}
-{-# LANGUAGE DerivingStrategies     #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE TypeApplications       #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
+{-# LANGUAGE NumericUnderscores    #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 
 module TokenMint2.Mint where
 
-import Control.Monad
-import Data.Aeson
-import qualified PlutusTx.AssocMap as AssocMap
-import Data.Text                    as T
-import Data.Void                    (Void)
-import qualified Data.Semigroup as Semigroup
-import GHC.Generics
-import Plutus.Contract              as Contract
+import           Control.Monad
+import           Data.Aeson
+import qualified Data.Semigroup                 as Semigroup
+import           Data.Text                      as T
+import           Data.Void                      (Void)
+import           GHC.Generics
+import           Ledger                         hiding (singleton)
+import           Ledger.Constraints
+import qualified Ledger.Constraints             as Constraints
+import qualified Ledger.Typed.Scripts           as Scripts
+import           Ledger.Value                   as Value
+import           Plutus.Contract                as Contract
+import           Plutus.Contract.Wallet         (getUnspentOutput)
+import           Plutus.Script.Utils.V1.Scripts as Utils
+import           Plutus.V1.Ledger.Scripts       as V1
 import qualified PlutusTx
-import Ledger hiding (singleton)
-import Ledger.Constraints
-import PlutusTx.Builtins              as Builtins
-import Plutus.V1.Ledger.Scripts       as V1
-import Plutus.Script.Utils.V1.Scripts as Utils
-import qualified Ledger.Constraints   as Constraints
-import qualified Ledger.Typed.Scripts as Scripts
-import Ledger.Value                   as Value
-import PlutusTx.Prelude hiding (Monoid (..), Semigroup (..))
-import Prelude (Semigroup (..))
-import qualified Prelude as Haskell
-import Schema (ToSchema)
-import Text.Printf
-import Plutus.Contract.Wallet         (getUnspentOutput)
+import qualified PlutusTx.AssocMap              as AssocMap
+import           PlutusTx.Builtins              as Builtins
+import           PlutusTx.Prelude               hiding (Monoid (..),
+                                                 Semigroup (..))
+import           Prelude                        (Semigroup (..))
+import qualified Prelude                        as Haskell
+import           Schema                         (ToSchema)
+import           Text.Printf
 
 data Recipient = RecipientParams
-    { _refOutput :: (TxId, Integer),
+    { _refOutput   :: (TxId, Integer),
       _tokenParams :: AssocMap.Map TokenName Integer
     }
     deriving stock (Haskell.Eq,Haskell.Show,Generic)
@@ -102,8 +103,8 @@ mkValidator :: Recipient -> Validator
 mkValidator = Validator . unMintingPolicyScript . policy
 
 {- [ Off-Chain Code ] -}
-data RecipientP = RecipientP { _asset       :: !(TokenName,Integer),
-                               _recipients  :: ![PaymentPubKeyHash]
+data RecipientP = RecipientP { _asset      :: !(TokenName,Integer),
+                               _recipients :: ![PaymentPubKeyHash]
                              }
                              deriving stock (Generic,Haskell.Show)
                              deriving anyclass (ToJSON,FromJSON,ToSchema)
@@ -114,15 +115,15 @@ mintContract :: forall w s e. (AsContractError e) => PaymentPubKeyHash -> (Token
 mintContract pk amounts = do
     txOutRef <- getUnspentOutput
     utxos <- utxosAt (pubKeyHashAddress pk Nothing)
-    let 
+    let
         token = mkRecipient txOutRef amounts
         curVali     = policy token
-        lookups     = mintingPolicy curVali <> 
+        lookups     = mintingPolicy curVali <>
                       Constraints.unspentOutputs utxos
 
-        mintTx      = mustSpendPubKeyOutput txOutRef <> 
+        mintTx      = mustSpendPubKeyOutput txOutRef <>
                       mustMintValue (mkRecipientValue (curSymbol token) token)
-    
+
     ledgerTx <- submitTxConstraintsWith @Scripts.Any lookups mintTx
     _ <- awaitTxConfirmed (getCardanoTxId ledgerTx)
     return token
@@ -136,7 +137,7 @@ sendMintToAll  RecipientP{_asset= (tn,ammount), _recipients=recips} = do
         v  = Value.singleton cs tn ammount
 
 
-    forM_ recips $ \w -> 
+    forM_ recips $ \w ->
         case (w /= ownPK) of
             True -> do
                 unbalTx <- mkTxConstraints @Void Haskell.mempty (mustPayToPubKey w v )
@@ -147,6 +148,8 @@ sendMintToAll  RecipientP{_asset= (tn,ammount), _recipients=recips} = do
 
 
 mintEndpoints :: Contract () RecipientSchema Text ()
-mintEndpoints = selectList [mint'] >> mintEndpoints
+mintEndpoints = do
+    selectList [mint']
+    mintEndpoints
     where
         mint' = endpoint @"mint" $ sendMintToAll
