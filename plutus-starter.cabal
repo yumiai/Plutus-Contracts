@@ -43,21 +43,27 @@ library
     exposed-modules:
       MyModule
     build-depends:
-      base >= 4.9 && < 5,
-      aeson -any,
-      bytestring -any,
-      containers -any,
-      freer-extras -any,
-      playground-common -any,
-      plutus-contract -any,
-      plutus-ledger -any,
-      plutus-ledger-api -any,
-      plutus-ledger-constraints -any,
-      plutus-tx -any,
-      plutus-tx-plugin -any,
-      plutus-script-utils -any,
-      text -any,
-      lens -any,
+      , base >=4.9 && <5
+      , aeson -any
+      , bytestring -any
+      , cardano-api -any
+      , containers -any
+      , data-default -any
+      , freer-extras -any
+      , freer-simple -any
+      , lens -any
+      , optparse-applicative -any
+      , playground-common -any
+      , plutus-contract -any
+      , plutus-ledger -any
+      , plutus-ledger-api -any
+      , plutus-ledger-constraints -any
+      , plutus-script-utils -any
+      , plutus-tx -any
+      , plutus-tx-plugin -any
+      , plutus-use-cases -any
+      , serialise -any
+      , text -any
     hs-source-dirs: src
 
 -- test-suite plutus-example-projects-test
