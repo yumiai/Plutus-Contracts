@@ -1,25 +1,10 @@
 cabal-version:      3.0
-name:               plutus-starter
+name:               contract-sandbox
 version:            0.1.0.0
-
--- A short (one-line) description of the package.
--- synopsis:
-
--- A longer description of the package.
--- description:
-
--- A URL where users can report bugs.
--- bug-reports:
-
 license: Apache-2.0
 license-files: LICENSE
-author:             Your name
-maintainer:         Your email
-
--- A copyright notice.
--- copyright:
--- category:
--- extra-source-files: CHANGELOG.md
+author:             Jack O'Brien
+maintainer:         jack@yumi.ai
 
 flag defer-plugin-errors
     description:
@@ -41,63 +26,30 @@ common lang
 library
     import: lang
     exposed-modules:
-      MyModule
-      Plutus.Contracts.Game
+      FortyTwo,
+      Tokens,
+      StateMachines.LightSwitch,
+      StateMachines.LightSwitch2
     build-depends:
-      base >= 4.9 && < 5,
-      aeson -any,
-      bytestring -any,
-      containers -any,
-      freer-extras -any,
-      playground-common -any,
-      plutus-contract -any,
-      plutus-ledger -any,
-      plutus-ledger-api -any,
-      plutus-ledger-constraints -any,
-      plutus-tx -any,
-      plutus-tx-plugin -any,
-      plutus-script-utils -any,
-      text -any,
-      lens -any,
-    hs-source-dirs: src examples/src
-
-test-suite plutus-example-projects-test
-  import: lang
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  hs-source-dirs: examples/test
-  other-modules:
-    Spec.Game
-  build-depends:
-    plutus-tx -any,
-    plutus-tx-plugin,
-    plutus-contract -any,
-    plutus-pab -any,
-    plutus-ledger -any,
-    plutus-starter -any
-  build-depends:
-    base >=4.9 && <5,
-    tasty -any,
-    tasty-hunit -any,
-    text -any,
-    tasty-hedgehog >=0.2.0.0
-
-
-executable plutus-starter-pab
-  import: lang
-  main-is: Main.hs
-  hs-source-dirs: pab
-  ghc-options:
-    -threaded
-  build-depends:
-    base >= 4.9 && < 5,
-    data-default -any,
-    plutus-contract -any,
-    plutus-pab -any,
-    plutus-starter -any,
-    aeson -any,
-    freer-simple -any,
-    prettyprinter -any,
-    freer-extras -any,
-    plutus-ledger -any,
-    openapi3 -any,
+      , aeson
+      , base >=4.9 && <5
+      , bytestring
+      , cardano-api
+      , containers
+      , data-default
+      , freer-extras
+      , freer-simple
+      , lens
+      , optparse-applicative
+      , playground-common
+      , plutus-contract
+      , plutus-ledger
+      , plutus-ledger-api
+      , plutus-ledger-constraints
+      , plutus-script-utils
+      , plutus-tx
+      , plutus-tx-plugin
+      , plutus-use-cases
+      , serialise
+      , text
+    hs-source-dirs: src
