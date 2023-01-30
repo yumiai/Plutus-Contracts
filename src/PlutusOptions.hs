@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TypeApplications  #-}
 
 module PlutusOptions where
 
@@ -69,13 +68,13 @@ minterExec (MinterParser (MakeScript ValidatorParams {
             let
                 astname = fromString an
                 mkOutRef x = case safeTxOut x of
-                    Left err -> throwIO $ userError err
                     Right tx -> return tx
+                    Left err -> throwIO $ userError err
             oref <- mkOutRef rf
             mnt  <- writeMintingPolicy $ mkRecipient oref (astname,n)
             case mnt of
-                Left err -> throwIO $ userError (show err)
                 Right () -> return ()
+                Left err -> throwIO $ userError (show err)
 minterExec Version = putStrLn "TokenMint2 Script CLI - v0.1.0"
 
 minterInfo :: ParserInfo MinterParser

@@ -38,19 +38,16 @@ safeTokenNameToHex t = B8.unpack . serialiseToRawBytesHex <$> toAsset t
         toAsset = deserialiseFromRawBytes AsAssetName . (\(BuiltinByteString s) -> s) . unTokenName
 
 writeMintingPolicy :: Recipient -> IO (Either (FileError ()) ())
-writeMintingPolicy rcp = do
-    let
+writeMintingPolicy rcp = writeFileTextEnvelope @(PlutusScript PlutusScriptV1) "tokenMint2.policy" Nothing serialised
+    where
         script = getMintingPolicy . policy $ rcp
         serialised = PlutusScriptSerialised . BS.toShort . LBS.toStrict . serialise $ script
-
-    writeFileTextEnvelope @(PlutusScript PlutusScriptV1) "tokenMint2.policy" Nothing serialised
 
 
 safeTxOut :: String -> Either String TxOutRef
 safeTxOut output = case checkTx $ txSpan output of
         Right tx@(txid,_) -> Right $ mkTxOut txid (fromJust . checkReadInteger $ tx)
         Left err          -> Left err
-
     where
         txSpan :: String -> (String,String)
         txSpan xs = span (/= '#') xs

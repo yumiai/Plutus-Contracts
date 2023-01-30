@@ -1,32 +1,23 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NumericUnderscores    #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE LambdaCase            #-}
 
 module TokenMint2.Trace where
 
-import           Control.Monad              hiding (fmap)
-import           Control.Monad.Freer.Extras as Extras
-import           Data.Map                   as Map hiding (take)
-import           Plutus.Trace.Emulator      as Emulator
-import           Ledger.Value               as Value
-import           Control.Applicative        as A
+import           Control.Applicative    as A
 import           Data.Default
-import           Data.Void
-import           Ledger
-import qualified Plutus.Contract.Trace      as Trace
-import           Wallet.Emulator.Wallet
-import           Plutus.Contract            as Contract
-import           Wallet.Emulator.Stream
-import           Data.Text                  (Text(..), pack)
+import           Data.Map               as Map hiding (take)
 import           Ledger.Ada
-import           Text.Printf
+import           Ledger.Value           as Value
+import           Plutus.Trace.Emulator  as Emulator
 import           TokenMint2.Mint
+import           Wallet.Emulator.Wallet
 
 traceIO :: IO ()
 traceIO = runEmulatorTraceIO' def conf sendToMintTrace
@@ -51,4 +42,4 @@ sendToMintTrace = do
     h1 <- activateContractWallet w1 mintEndpoints
     callEndpoint @"mint" h1 mintParams
     _  <- Emulator.waitNSlots 10
-    return () 
+    return ()

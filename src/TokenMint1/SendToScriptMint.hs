@@ -1,11 +1,11 @@
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE DeriveAnyClass      #-}
-{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE NumericUnderscores  #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
@@ -16,40 +16,37 @@
 
 module TokenMint1.SendToScriptMint where
 
-import Control.Monad
-import Data.Aeson
-import Data.Map as Map
-import Data.Text                    as T
-import Data.Void
-import GHC.Generics 
-import Plutus.Contract
+import           Control.Monad
+import           Data.Aeson
+import           Data.ByteString                as ByteString
+import           Data.Either                    (fromLeft, fromRight)
+import           Data.Map                       as Map
+import           Data.Maybe                     (fromJust)
+import           Data.Text                      as T
+import           Data.Void
+import           GHC.Generics
+import           Ledger                         hiding (singleton)
+import           Ledger.Ada                     as Ada
+import           Ledger.Constraints
+import qualified Ledger.Constraints             as Constraints
+import           Ledger.Tx
+import qualified Ledger.Typed.Scripts           as Scripts
+import           Ledger.Value                   as Value
+import           Playground.Contract
+import           Plutus.Contract
+import           Plutus.Contract.Wallet         (getUnspentOutput)
+import           Plutus.Script.Utils.V1.Scripts as Utils
+import           Plutus.V1.Ledger.Scripts       as V1
 import qualified PlutusTx
-import Ledger hiding (singleton)
-import Ledger.Constraints
-import Ledger.Tx
-import PlutusTx.Builtins              as Builtins
-import Plutus.V1.Ledger.Scripts       as V1
-import Plutus.Script.Utils.V1.Scripts as Utils
-import qualified Ledger.Constraints   as Constraints
-import qualified Ledger.Typed.Scripts as Scripts
-import Ledger.Ada                     as Ada
-import Ledger.Value                   as Value
-import Playground.Contract
-import Playground.TH
-import Playground.Types
-import Wallet.Emulator
-import PlutusTx.Prelude hiding (Semigroup(..), unless)
-import Prelude (IO, Semigroup (..), Show (..), String, undefined)
-import Text.Printf
-import Data.ByteString                    as ByteString
-import Playground.Contract
-import Data.Maybe                  (fromJust)
-import Plutus.Contract.Wallet      (getUnspentOutput)
-import Data.Either (fromLeft,fromRight)
+import           PlutusTx.Builtins              as Builtins
+import           PlutusTx.Prelude               hiding (Semigroup (..), unless)
+import           Prelude                        (IO, Semigroup (..), Show (..),
+                                                 String, undefined)
+import           Text.Printf
 
 
 -- {-# INLINABLE sendToScriptMint #-}
--- I want this contract to send tokens to a script and allow wallets to grab the tokens 
+-- I want this contract to send tokens to a script and allow wallets to grab the tokens
 -- the validator and minting policy should be thick as bricks and always succeed. This contract
 -- is only to explore the possibility of spending,producing and minting tokens to wallets and scripts.
 
@@ -96,7 +93,7 @@ instance Scripts.ValidatorTypes SillyType where
     type instance RedeemerType SillyType = ()
 
 sillyValidatorPlutus :: Scripts.TypedValidator SillyType
-sillyValidatorPlutus = Scripts.mkTypedValidator @SillyType 
+sillyValidatorPlutus = Scripts.mkTypedValidator @SillyType
         $$(PlutusTx.compile [|| mkSillyValidator ||])
         $$(PlutusTx.compile [|| wrap ||])
     where
@@ -115,16 +112,16 @@ valHash = validatorHash sillyValidator
 scrAddress :: Address
 scrAddress = scriptAddress sillyValidator
 
--- =-=-=-=-=-=-= 
+-- =-=-=-=-=-=-=
 -- Off-Chain Code
--- =-=-=-=-=-=-= 
+-- =-=-=-=-=-=-=
 
-data MintingParams = MintingParams 
-            { _tokenName :: !TokenName,
+data MintingParams = MintingParams
+            { _tokenName    :: !TokenName,
               _tokenAmmount :: !Integer
             } deriving (Show,ToJSON,FromJSON,Generic,ToSchema)
 
-type MintSchema = Endpoint "give" MintingParams .\/ 
+type MintSchema = Endpoint "give" MintingParams .\/
                   Endpoint "grab" ()
 
 give :: MintingParams -> Contract w s Text ()
@@ -138,8 +135,8 @@ give MintingParams{..} = do
             constraints :: TxConstraints Void Void
             constraints = mustMintValue val <> mustPayToOtherScript valHash unitDatum (val <> minLoveLace)
                 {- Note: [ On Constraints...]
-                Beacuse I forgot that outputs needed lovelace in the transaction it failed calling insuffcient funds. 
-                Make sure  outputs have minimum 2 ADA using mustPayToTheScript constraint fails to combine with other 
+                Beacuse I forgot that outputs needed lovelace in the transaction it failed calling insuffcient funds.
+                Make sure  outputs have minimum 2 ADA using mustPayToTheScript constraint fails to combine with other
                 constraints other than itself because of an ambiguous redeemer or datum type variables.
                 -}
         checkTokenName _tokenName -- make sure asset matches SAND
@@ -154,15 +151,15 @@ give MintingParams{..} = do
 
 -- an individual HOF for checking token name in the offchain code.
 checkTokenName ::  TokenName -> Contract w s Text ()
-checkTokenName x 
+checkTokenName x
         | x == defToken = return ()
         | otherwise = throwError . T.pack $ printf "TokenName must match %s! User defined _tokenName = %s" (toString defToken) (toString x)
 
 {- Note: [ Rewrite ze grab function ]
-would it be prudent to create two grab functions? 
+would it be prudent to create two grab functions?
 one for only grabbing utxo's with asset class y?
 I find using x - 100 annoying. Surely theres a better
-way of resctring grabs to only 100 tokens rather than 
+way of resctring grabs to only 100 tokens rather than
 using arithmatic.
  -}
 
@@ -174,7 +171,7 @@ grab = do
         orefs = Map.keys utxos
         lookups = Constraints.unspentOutputs utxos <>
                   Constraints.otherScript sillyValidator
-        
+
         tx :: TxConstraints Void Void
         tx = mconcat [Constraints.mustSpendScriptOutput oref unitRedeemer | oref <- orefs]
 
@@ -190,7 +187,7 @@ grab = do
 
 {- | Base Grab Function
 currently spends all the unspent outputs at a given script address.
-The current condition is as it stands depending on which wallet calls 
+The current condition is as it stands depending on which wallet calls
 the contract, he who calls the contract shall recieve thy the funds.
 -}
 
@@ -202,8 +199,8 @@ endpoints = selectList [give', grab'] >> endpoints
 
 
 {- [ THE FUNCTION GRAVEYARD ]
-He who finds these dead functions thus hath find them useful.. 
-may they bless thy and rest in peace.  
+He who finds these dead functions thus hath find them useful..
+may they bless thy and rest in peace.
 -}
 
 -- grab :: Contract w s Text ()
@@ -212,31 +209,31 @@ may they bless thy and rest in peace.
 --     utxos <- utxosAt scrAddress
 --     tkn <- findValue
 --     case Map.null utxos of
---         True -> logInfo @String $ printf "no utxos at address: %s" (show scrAddress) 
+--         True -> logInfo @String $ printf "no utxos at address: %s" (show scrAddress)
 --         False  -> do
 --             let
 --                 orefs = Map.keys utxos
 --                 tknBal = Value.valueOf getBal curSymbol defToken
 --                 -- maybe find the val in the DecoratedTxOut and reduce by 100
 --                 -- what happens when balance is 0?
-                
+
 --                 getBal = case isRight tkn of
 --                     True -> (\(Right x) -> x ) tkn
 --                     _ -> minLoveLace
-                
+
 --                 val = Value.singleton curSymbol defToken (tknBal - 100) <> minLoveLace
 --                 lookups :: ScriptLookups SillyType
 --                 lookups = Constraints.unspentOutputs utxos                       <>
---                           Constraints.otherScript sillyValidator                 
+--                           Constraints.otherScript sillyValidator
 --                         --   Constraints.typedValidatorLookups sillyValidatorPlutus
 --                 tx = case tkn of
 --                     Right _ -> mconcat [Constraints.mustSpendScriptOutput oref unitRedeemer | oref <- orefs] <>
 --                                        Constraints.mustPayToOtherScript valHash unitDatum val <>
 --                                        Constraints.mustPayToPubKey pkh minLoveLace
-                    
+
 --                     Left _ -> mconcat [Constraints.mustSpendScriptOutput oref unitRedeemer | oref <- orefs] <>
 --                               mustPayToPubKey pkh minLoveLace
-                
+
 --             ledgerTx <- submitTxConstraintsWith lookups tx
 --             _ <- awaitTxConfirmed $ getCardanoTxId ledgerTx
 --             logInfo @String $ printf "submitted transaction"
