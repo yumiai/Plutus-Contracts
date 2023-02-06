@@ -55,7 +55,7 @@ instance Scripts.ValidatorTypes MeaningOfLifeType where
 
 {-# INLINABLE whatIsTheMeaningOfLife #-}
 
-whatIsTheMeaningOfLife :: () -> MeaningOfLife -> ScriptContext   -> Bool
+whatIsTheMeaningOfLife :: () -> MeaningOfLife -> ScriptContext -> Bool
 whatIsTheMeaningOfLife ()  (MeaningOfLife int) _ = traceIfFalse "this is not the meaning of life" checkNumber
     where
         checkNumber :: Bool
@@ -106,6 +106,7 @@ grab molf = do
         
         lookups :: ScriptLookups MeaningOfLifeType
         lookups = Constraints.otherScript scriptValidator  <> Constraints.unspentOutputs utxos
+
         tx :: TxConstraints (Scripts.RedeemerType MeaningOfLifeType) (Scripts.DatumType MeaningOfLifeType)
         tx = foldMap createConstraints orefs
     case molf == 42 of
@@ -135,5 +136,7 @@ lifeTrace = do
     callEndpoint @"send" h1 20_000_000
     _ <- Emulator.waitNSlots 5
     callEndpoint @"grab" h2 52
+    _ <- Emulator.waitNSlots 5
+    callEndpoint @"grab" h2 42
     _ <- Emulator.waitNSlots 5
     return ()
